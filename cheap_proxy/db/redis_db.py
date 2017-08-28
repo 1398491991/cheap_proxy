@@ -6,22 +6,28 @@
 @desc: 
 """
 from ..util.misc import import_module_from_str
+import logging
+import pprint
+
+logger = logging.getLogger(__name__)
 
 class RedisDb(object):
 
     def __init__(self,setting_manager):
         self.setting_manager = setting_manager
+        self.setup_conn()
 
     @property
     def conn(self):
-        if not hasattr(self,'_conn'):
-            self._conn = self.make_conn()
-
         return self._conn
 
-    def make_conn(self):
-        conn_class = import_module_from_str(self.setting_manager.get('QUEUE_CONN_CLASS','redis.Redis'))
-        return conn_class(**self.setting_manager.get('QUEUE_CONN_CONFIG',{}))
+    def setup_conn(self):
+        conn_class_path = self.setting_manager['QUEUE_CONN_CLASS']
+        conn_config = self.setting_manager['QUEUE_CONN_CONFIG']
+        logger.info('QUEUE_CONN_CLASS :%s'%conn_class_path)
+        logger.info('QUEUE_CONN_CONFIG :\n%s'%pprint.pformat(conn_config))
+        conn_class = import_module_from_str(conn_class_path)
+        self._conn = conn_class(**conn_config)
 
     @classmethod
     def from_setting_manager(cls,setting_manager):

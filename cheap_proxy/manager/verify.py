@@ -5,65 +5,71 @@
 @time: 2017/8/27 12:49
 @desc: 
 """
-from ..util.misc import import_module_from_str
+
 import requests
+from ..util.misc import import_module_from_str
+from .crawl import CrawlManager
 import logging
-from ..util.misc import to_native_str
 
 logger = logging.getLogger(__name__)
-logging.basicConfig()
-class VerifyManager(object):
 
+class VerifyManager(CrawlManager):
 
-    def __init__(self, setting_manager):
-        self.setting_manager = setting_manager
-
-    @classmethod
-    def from_setting_manager(cls, setting_manager):
-        return cls(setting_manager)
-
-    def make_raw_proxy_queue(self):
-        raw_queue_class_path = self.setting_manager.get('RAW_QUEUE_CLASS', 'cheap_proxy.queue.redis_queue.RedisQueue')
-        raw_queue_key = self.setting_manager.get('RAW_QUEUE_KEY', 'cheap_proxy:raw_proxy')
-        raw_db_class_path = self.setting_manager.get('RAW_DB_CLASS', 'cheap_proxy.db.redis_db.RedisDb')
-
-        server = import_module_from_str(raw_db_class_path).from_setting_manager(self.setting_manager)
-        self._raw_proxy_queue = import_module_from_str(raw_queue_class_path)(server, raw_queue_key)
+    def __init__(self,setting_manager):
+        super(VerifyManager,self).__init__(setting_manager)
+        self.setup_store_db()
+        self.setup_proxy_class()
 
     @property
-    def raw_proxy_queue(self):
-        return self._raw_proxy_queue
-
-    def verify(self):
-        self.make_raw_proxy_queue()
-
-        while 1:
-            obj = self._raw_proxy_queue.pop(3)
-            if not obj:
-                break
-
-            result = self.verify_proxy(obj)
-
-
+    def store_db(self):
+        return self._store_db
 
     @property
     def proxy_class(self):
-        if not hasattr(self,'_proxy_class'):
-            self._proxy_class = import_module_from_str(self.setting_manager.get('PROXY_CLASS', 'cheap_proxy.util.proxy.Proxy'))
-
         return self._proxy_class
 
 
-    def verify_proxy(self,proxy):
-        proxies = self.proxy_class.deserialize(to_native_str(proxy))
-        proxies = {proxies._pt: "%s"%proxies}
+    def setup_store_db(self):
+
+        store_db_class_path = self.setting_manager['STORE_DB_CLASS']
+        logger.info('STORE_DB_CLASS :%s'%store_db_class_path)
+        store_db_class = import_module_from_str(store_db_class_path)
+        self._store_db = store_db_class.from_setting_manager(self.setting_manager)
+
+    def setup_proxy_class(self):
+        proxy_class_path = self.setting_manager['PROXY_CLASS']
+        logger.info('PROXY_CLASS :%s' % proxy_class_path)
+        self._proxy_class = import_module_from_str(proxy_class_path)
+
+    def get_parallel_size(self):
+        # 计算合适的处理池大小
+        size = self.setting_manager['VERIFY_PARALLEL_SIZE']
+        logger.info('VERIFY_PARALLEL_SIZE :%s'%size)
+        return size
+
+
+    def run(self):
+        self.collector_pool.map(self.map_run, self.raw_proxy_queue)
+
+
+    def map_run(self,proxy):
+        proxy = self.proxy_class(**proxy)
+        proxies = proxy.to_requests_format()
+        proxy.test_times_increment()
         try:
             # 超过40秒的代理就不要了
             r = requests.get('https://www.baidu.com', proxies=proxies, timeout=40, verify=False)
             if r.status_code == 200:
                 logger.debug('%s is ok' % proxies)
-                return True
 
         except:
-            logger.info('validUsefulProxy error %s'%proxies)
-            return False
+            logger.error('proxy error %s'%proxies)
+            proxy.failure_times_increment()
+
+        proxy.set_new_response_time(1)
+        return self.to_store(proxy)
+
+    def to_store(self,proxy):
+        logger.debug('new proxy to store :%s'%proxy)
+        self.store_db.save_proxy(proxy)
+

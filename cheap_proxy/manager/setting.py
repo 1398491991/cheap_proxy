@@ -41,3 +41,9 @@ class SettingManager(object):
 
     def update(self,k,v):
         self.settings.update(k,v)
+
+    def __getitem__(self, item):
+        return self.settings[item]
+
+    def __setitem__(self, key, value):
+        self.settings[key] = value

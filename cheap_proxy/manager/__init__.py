@@ -18,6 +18,7 @@ logging.basicConfig(level=logging.DEBUG,
 from .setting import SettingManager
 from .collector import CollectorManager
 from .verify import VerifyManager
+from .store import StoreManager
 from multiprocessing import Process
 
 class Manager(object):
@@ -25,11 +26,13 @@ class Manager(object):
         self.setting_manager = SettingManager(ext_settings or {})
         self.collector_manager = CollectorManager.from_setting_manager(self.setting_manager)
         self.verify_manager = VerifyManager.from_setting_manager(self.setting_manager)
+        self.store_manager = StoreManager.from_setting_manager(self.setting_manager)
 
     def run(self,join = True):
         ps = [
-            Process(target=self.collector_manager.crawl, name='collector_manager'),
-            Process(target=self.verify_manager.verify, name='verify_manager'),
+            # Process(target=self.collector_manager.run, name='collector_manager'),
+            Process(target=self.verify_manager.run, name='verify_manager'),
+            # Process(target=self.store_manager.run, name='store_manager'),
         ]
 
         for p in ps:

@@ -13,16 +13,18 @@ class Xicidaili(object):
 
     def __init__(self,setting_manager):
         self.setting_manager = setting_manager
+        self._set_proxy_class()
 
     @classmethod
     def from_setting_manager(cls,setting_manager):
         return cls(setting_manager)
 
+    def _set_proxy_class(self):
+        proxy_class_path = self.setting_manager['PROXY_CLASS']
+        self._proxy_class = import_module_from_str(proxy_class_path)
+
     @property
     def proxy_class(self):
-        if not hasattr(self,'_proxy_class'):
-            self._proxy_class = import_module_from_str(self.setting_manager.get('PROXY_CLASS', 'cheap_proxy.util.proxy.Proxy'))
-
         return self._proxy_class
 
 
