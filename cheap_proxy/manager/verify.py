@@ -10,6 +10,8 @@ import requests
 from ..util.misc import import_module_from_str
 from .crawl import CrawlManager
 import logging
+from requests.exceptions import RequestException
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -53,21 +55,36 @@ class VerifyManager(CrawlManager):
 
 
     def map_run(self,proxy):
-        proxy = self.proxy_class(**proxy)
-        proxies = proxy.to_requests_format()
-        proxy.test_times_increment()
-        try:
-            # 超过40秒的代理就不要了
-            r = requests.get('https://www.baidu.com', proxies=proxies, timeout=40, verify=False)
-            if r.status_code == 200:
-                logger.debug('%s is ok' % proxies)
+        proxy = self.proxy_class(**proxy) # 实例化一个代理对象 根据 dict
+        proxy.test_times_increment() # 测试次数 +1
 
-        except:
-            logger.error('proxy error %s'%proxies)
-            proxy.failure_times_increment()
+        test_result,use_time = self.test_request(proxy)
+        logger.debug('test request use %s done,result %s ,use time %s'%(proxy,test_result,use_time))
+        if not test_result:
+            proxy.failure_times_increment() # 失败次数 +1
 
-        proxy.set_new_response_time(1)
+        proxy.set_new_response_time(use_time) # 设置本次所用的时间
         return self.to_store(proxy)
+
+
+    def test_request(self,proxy):
+        test_result = False
+        start_time = time.time()
+        try:
+            # 超过40秒的代理算失败
+            r = requests.get('https://www.baidu.com', proxies=proxy.to_requests_format(), timeout=40, verify=False)
+            if r.status_code == 200:
+                logger.debug('%s is ok' % proxy)
+                test_result = True
+
+        except RequestException:
+            logger.error('%s is failed'%proxy)
+
+
+        end_time = time.time()
+
+        return (test_result,end_time - start_time)
+
 
     def to_store(self,proxy):
         logger.debug('new proxy to store :%s'%proxy)

@@ -27,14 +27,16 @@ class Proxy(object):
     def __init__(self,host,port,pt,
                  test_times = 0,
                  failure_times = 0,
-                 success_rate = 0,
+                 success_rate = None,
                  avg_response_time = None,
                  score = None,
+                 from_store = False, # 是否来自数据库中，防止与采集时候冲突
                  **kwargs):
 
         self.host = host
         self.port = port
         self.pt = pt # http or https
+        self.from_store = from_store # 是否来自数据库中，防止与采集时候冲突
 
         self._test_times = test_times
         self._failure_times = failure_times
@@ -56,10 +58,10 @@ class Proxy(object):
     def to_requests_format(self):
         return {self.pt:self.__str__()}
 
-    def to_base_dict(self):
-        return {'host':self.host,
-                'port':self.port,
-                'pt': self.pt,}
+    # def to_base_dict(self):
+    #     return {'host':self.host,
+    #             'port':self.port,
+    #             'pt': self.pt,}
 
     def to_dict(self):
         return {'host':self.host,
@@ -70,6 +72,7 @@ class Proxy(object):
                 'success_rate': self.success_rate,
                 'avg_response_time': self.avg_response_time,
                 'score': self.score,
+                'from_store':self.from_store,
                 }
 
 
@@ -92,7 +95,11 @@ class Proxy(object):
 
     @property
     def score(self):
-        return (self.success_rate + self.test_times / 500) / self.avg_response_time
+        try:
+            return (self.success_rate + self.test_times / 500) / self.avg_response_time
+        except TypeError:
+            # 0 / None
+            return None
 
 
     @property
@@ -110,6 +117,7 @@ class Proxy(object):
     @property
     def success_rate(self):
         try:
-            return 1.0 - float(self._failure_times) / self.test_times
+            return 1.0 - float(self.failure_times) / self.test_times
         except ZeroDivisionError:
-            return 0
+            # 0 / 0
+            return None

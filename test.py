@@ -7,7 +7,14 @@
 @time: 2017-08-28 10:53
 @desc: 
 """
-from gevent import monkey
-monkey.patch_socket()
+# from gevent import monkey
+# monkey.patch_socket()
 from cheap_proxy.manager import Manager
-Manager().run()
+test = Manager()
+test.setup_blocking_scheduler()
+test.add_default_service()
+test.start()
+# test.setup_crontab_service()
+
+# test.start()
+# Manager().run()

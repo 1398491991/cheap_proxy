@@ -57,5 +57,5 @@ class CollectorManager(CrawlManager):
         # 迭代采集器采集的代理
         for safe_proxy in collector.crawl():
             if safe_proxy:
-                logger.debug('push new safe_proxy :%s'%safe_proxy)
-                self.raw_proxy_queue.push(safe_proxy.to_base_dict())
+                logger.debug('push proxy<%s> to raw_queue, from net'%safe_proxy)
+                self.raw_proxy_queue.push(safe_proxy.to_dict())

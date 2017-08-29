@@ -54,9 +54,11 @@ class MysqlDb(object):
         try:
             with self.conn.cursor() as cur:
                 cur.execute('SELECT 1 FROM `%s`;'%self.store_table_name)
+                self.conn.commit()
+
         except:
             sql = """
-                    CREATE TABLE `%s` (
+            CREATE TABLE `%s` (
               `proxy` varchar(30) NOT NULL,
               `test_times` int(5) NOT NULL DEFAULT '0',
               `failure_times` int(5) NOT NULL DEFAULT '0',
@@ -65,30 +67,38 @@ class MysqlDb(object):
               `score` float(5,2) NOT NULL DEFAULT '0.00',
               PRIMARY KEY (`proxy`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-            """%self.operation_table_name
-
+            """%self.store_table_name
+            logger.info('create table :%s' % self.store_table_name)
+            logger.info('run sql :\n%s'%sql)
             with self.conn.cursor() as cur:
                 cur.execute(sql)
                 self.conn.commit()
 
-            logger.info('create table %s'%self.store_table_name)
+
 
     def get_all(self):
-        with self.conn.cursor() as cur:
-            cur.execute('select * from %s'%self.store_table_name)
-            result = cur.fetchall()
-        return result
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute('select * from %s'%self.store_table_name)
+                result = cur.fetchall()
+                self.conn.commit()
+            return result
+
+        except:
+            # 表不存在
+            return []
+
 
 
     def exist(self,proxy):
         with self.conn.cursor() as cur:
-            cur.execute('select 1 from %s WHERE proxy="%s"'%(self.store_table_name,
-                                                             proxy),
-                        )
-            return bool(cur)
+            count = cur.execute('select 1 from %s WHERE proxy="%s"'%(self.store_table_name,proxy),)
+            self.conn.commit()
+            return bool(count)
 
     def save_proxy(self,proxy):
-        if self.exist(proxy):
+        if proxy.from_store:
+            # 来自数据库 则 直接更新 但这有可能因为 其他进程删除这个代理 是的这个sql执行错误
             sql = 'update '+self.store_table_name+' set test_times=%s,failure_times=%s,success_rate=%s,' \
                                                   'avg_response_time=%s,score=%s where proxy="%s"'%(proxy.test_times,
                     proxy.failure_times,proxy.success_rate,
@@ -97,6 +107,7 @@ class MysqlDb(object):
 
 
         else:
+            # 来自网站 执行插入操作, 这回因为代理的唯一索引而导致错误
             sql = 'insert into '+self.store_table_name+' VALUES (%s,%s,%s,%s,%s,%s)'
             data = (str(proxy),proxy.test_times,
                     proxy.failure_times,proxy.success_rate,
@@ -104,15 +115,11 @@ class MysqlDb(object):
 
         try:
             with self.conn.cursor() as cur:
-                logger.debug(sql)
-                logger.debug(data)
                 cur.execute(sql,data)
                 self.conn.commit()
 
         except:
-            logger.exception('error')
-            # pass
-            # self.conn.ra
+            pass
 
 
 

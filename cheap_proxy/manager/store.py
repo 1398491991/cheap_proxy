@@ -25,5 +25,7 @@ class StoreManager(VerifyManager):
                                      failure_times,
                                      success_rate,
                                      avg_response_time,
-                                     score,)
+                                     score,
+                                     from_store = True) #来自数据库
+            logger.debug('push proxy<%s> to raw_queue, from store'%proxy)
             self.raw_proxy_queue.push(proxy.to_dict())

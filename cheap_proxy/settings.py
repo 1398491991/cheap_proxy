@@ -48,3 +48,11 @@ STORE_CONN_CONFIG = {
 STORE_TABLE_NAME = 'cheap_proxy'
 
 STORE_DB_CLASS = 'cheap_proxy.db.mysql_db.MysqlDb'
+
+
+BLOCKING_SCHEDULER_CONFIG = {}
+
+
+APP = 'cheap_proxy.util.api.app'
+
+APP_RUN_CONFIG = {'host':'0.0.0.0',}
