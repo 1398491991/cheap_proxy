@@ -14,7 +14,3 @@ test = Manager()
 test.setup_blocking_scheduler()
 test.add_default_service()
 test.start()
-# test.setup_crontab_service()
-
-# test.start()
-# Manager().run()

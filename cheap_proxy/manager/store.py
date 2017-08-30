@@ -18,7 +18,7 @@ class StoreManager(VerifyManager):
     def run(self):
         result = self.store_db.get_all()
         for proxy in result:
-            proxy_str,test_times,failure_times,success_rate,avg_response_time,score = proxy
+            proxy_str,test_times,failure_times,success_rate,avg_response_time,score,_ = proxy
             pt,host,port = re.search('^(http[s]{0,1})://(\d+\.\d+\.\d+\.\d+):(\d+)$',proxy_str).groups()
             proxy = self.proxy_class(host,port,pt,
                                      test_times,

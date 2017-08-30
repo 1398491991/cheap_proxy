@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 class Manager(object):
     def __init__(self,ext_settings = None):
-        self.setting_manager = SettingManager(ext_settings or {})
+        self.setting_manager = SettingManager(ext_settings)
 
     def setup_blocking_scheduler(self):
         blocking_scheduler_config = self.setting_manager['BLOCKING_SCHEDULER_CONFIG']

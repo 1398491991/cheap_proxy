@@ -8,6 +8,7 @@
 from ..util.misc import import_module_from_str
 import logging
 import pprint
+import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +66,7 @@ class MysqlDb(object):
               `success_rate` float(5,2) NOT NULL DEFAULT '0.00',
               `avg_response_time` float NOT NULL DEFAULT '0',
               `score` float(5,2) NOT NULL DEFAULT '0.00',
+              `update_time` datetime NOT NULL,
               PRIMARY KEY (`proxy`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
             """%self.store_table_name
@@ -100,18 +102,20 @@ class MysqlDb(object):
         if proxy.from_store:
             # 来自数据库 则 直接更新 但这有可能因为 其他进程删除这个代理 是的这个sql执行错误
             sql = 'update '+self.store_table_name+' set test_times=%s,failure_times=%s,success_rate=%s,' \
-                                                  'avg_response_time=%s,score=%s where proxy="%s"'%(proxy.test_times,
+                                                  'avg_response_time=%s,score=%s ' \
+                                                  'update_time="%s" where proxy="%s"'%(proxy.test_times,
                     proxy.failure_times,proxy.success_rate,
-                    proxy.avg_response_time,proxy.score,proxy)
+                    proxy.avg_response_time,proxy.score,datetime.datetime.now(),proxy,)
+
             data = None
 
 
         else:
             # 来自网站 执行插入操作, 这回因为代理的唯一索引而导致错误
-            sql = 'insert into '+self.store_table_name+' VALUES (%s,%s,%s,%s,%s,%s)'
+            sql = 'insert into '+self.store_table_name+' VALUES (%s,%s,%s,%s,%s,%s,%s)'
             data = (str(proxy),proxy.test_times,
                     proxy.failure_times,proxy.success_rate,
-                    proxy.avg_response_time,proxy.score,)
+                    proxy.avg_response_time,proxy.score,datetime.datetime.now(),)
 
         try:
             with self.conn.cursor() as cur:
