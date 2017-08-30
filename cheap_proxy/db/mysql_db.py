@@ -94,7 +94,7 @@ class MysqlDb(object):
         with self.conn.cursor() as cur:
             count = cur.execute('select 1 from %s WHERE proxy="%s"'%(self.store_table_name,proxy),)
             self.conn.commit()
-            return bool(count)
+        return bool(count)
 
     def save_proxy(self,proxy):
         if proxy.from_store:
@@ -120,6 +120,9 @@ class MysqlDb(object):
 
         except:
             pass
+            # logger.exception('proxy %s to store error'%proxy)
 
+        else:
+            logger.debug('proxy %s to store succeed'%proxy)
 
 

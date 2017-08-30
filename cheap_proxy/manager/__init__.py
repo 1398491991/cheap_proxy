@@ -38,21 +38,21 @@ class Manager(object):
         # 提供添加定时任务的接口
         return self.blocking_scheduler.add_job(*args,**kwargs)
 
-    def add_collector_service(self,trigger = 'interval', minutes=10,**kwargs):
+    def add_collector_service(self,trigger = 'interval', minutes=5,**kwargs):
         self.collector_manager = CollectorManager.from_setting_manager(self.setting_manager)
         self.add_crontab_job(self.collector_manager.run,
                              trigger = trigger,
                              minutes = minutes,
                              **kwargs)
 
-    def add_verify_service(self,trigger = 'interval', minutes=10,**kwargs):
+    def add_verify_service(self,trigger = 'interval', minutes=3,**kwargs):
         self.verify_manager = VerifyManager.from_setting_manager(self.setting_manager)
         self.add_crontab_job(self.verify_manager.run,
                              trigger = trigger,
                              minutes = minutes,
                              **kwargs)
 
-    def add_store_service(self,trigger = 'interval', minutes=10,**kwargs):
+    def add_store_service(self,trigger = 'interval', minutes=3,**kwargs):
         self.store_manager = StoreManager.from_setting_manager(self.setting_manager)
         self.add_crontab_job(self.store_manager.run,
                              trigger = trigger,

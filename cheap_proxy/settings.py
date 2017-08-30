@@ -53,6 +53,9 @@ STORE_DB_CLASS = 'cheap_proxy.db.mysql_db.MysqlDb'
 BLOCKING_SCHEDULER_CONFIG = {}
 
 
-APP = 'cheap_proxy.util.api.app'
+APP = 'cheap_proxy.util.app.app'
 
 APP_RUN_CONFIG = {'host':'0.0.0.0',}
+
+
+VERIFY_PROXY_CLASS = 'cheap_proxy.util.verify.VerifyProxy'
